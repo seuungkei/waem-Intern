@@ -1,0 +1,19 @@
+-- migrate:up
+CREATE TABLE users (
+  id INT NOT NULL AUTO_INCREMENT,
+  name VARCHAR(200) NOT NULL,
+  nickname VARCHAR(20) NOT NULL,
+  email VARCHAR(50) NOT NULL UNIQUE,
+  password VARCHAR(100) NOT NULL,
+  region_id INT NOT NULL,
+  city_id INT NOT NULL,
+  address_id INT NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY(id),
+  FOREIGN KEY (region_id) REFERENCES regions(id),
+  FOREIGN KEY (city_id) REFERENCES cities(id),
+  FOREIGN KEY (address_id) REFERENCES address(id)
+);
+-- migrate:down
+DROP TABLE users;
