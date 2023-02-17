@@ -1,7 +1,7 @@
 const { mysqlDatabase } = require('../models/dbconfig');
 const { detectError } = require('../utils/detectError');
 
-const getAllProduct = async (userId, limit, offset) => {
+const getAllProduct = async (limit, offset) => {
   try {
     return await mysqlDatabase.query(
       `
@@ -17,13 +17,11 @@ const getAllProduct = async (userId, limit, offset) => {
         products p
       INNER JOIN sellers s ON s.id = p.seller_id
       INNER JOIN users u ON s.user_id = u.id
-      INNER JOIN regions r ON u.region_id = r.id
-      INNER JOIN cities c ON u.city_id = c.id
-      INNER JOIN address a ON u.address_id = a.id
-      WHERE u.id = ?
+      INNER JOIN regions r ON p.region_id = r.id
+      INNER JOIN cities c ON p.city_id = c.id
+      INNER JOIN address a ON p.address_id = a.id
       LIMIT ${limit} OFFSET ${offset}
-      `,
-      [userId]
+      `
     );
   } catch (err) {
     console.error(err.stack);
@@ -62,7 +60,87 @@ const getDetailProduct = async (productId) => {
   );
 };
 
+const productStatusEnum = Object.freeze({
+  판매중: 1,
+  거래중: 2,
+  판매완료: 3,
+});
+
+const registerProduct = async (title, price, content, categoryId, userId, images, regionId, cityId, addressId) => {
+  try {
+    const queryRunner = mysqlDatabase.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    const [sellerUser] = await queryRunner.query(
+      `
+      SELECT
+        s.id
+      FROM
+        sellers s
+      WHERE s.user_id = ?
+      `,
+      [userId]
+    );
+
+    let sellerUserId = sellerUser?.id;
+
+    if (!sellerUserId) {
+      const createSeller = await queryRunner.query(
+        `
+        INSERT INTO sellers (
+          user_id
+        ) VALUES (?)
+        `,
+        [userId]
+      );
+      sellerUserId = createSeller.insertId;
+    }
+
+    const product = await queryRunner.query(
+      `
+      INSERT INTO products (
+        title,
+        price,
+        content,
+        category_id,
+        seller_id,
+        thumbnail,
+        product_status_id,
+        region_id,
+        city_id,
+        address_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `,
+      [title, price, content, categoryId, sellerUserId, images[0], productStatusEnum.판매중, regionId, cityId, addressId]
+    );
+
+    const bulkImage = images.map((imageUrl) => {
+      return [imageUrl, product.insertId];
+    });
+
+    await queryRunner.query(
+      `
+      INSERT INTO product_images (
+        image_url,
+        product_id
+    ) VALUES ?
+      `,
+      [bulkImage]
+    );
+
+    await queryRunner.commitTransaction();
+    await queryRunner.release();
+  } catch (err) {
+    console.error(err.stack);
+    await queryRunner.rollbackTransaction();
+    await queryRunner.release();
+    detectError('DATABASE_ERROR', 400);
+  }
+};
+
 module.exports = {
   getAllProduct,
   getDetailProduct,
+  registerProduct,
 };

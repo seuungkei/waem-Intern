@@ -10,7 +10,7 @@ const validationToken = (req, res, next) => {
 
   if (!decode) detectError('USER_DOES_NOT_EXIST', 404);
 
-  req.userId = decode.userId;
+  req.userId = decode;
   next();
 };
 
