@@ -10,9 +10,9 @@ const getAllProduct = async (limit, offset) => {
         p.thumbnail,
         p.title,
         p.price,
-        r.name as region,
-        c.name as city,
-        a.name as address
+        r.name AS region,
+        c.name AS city,
+        a.name AS address
       FROM
         products p
       INNER JOIN sellers s ON s.id = p.seller_id
@@ -29,6 +29,38 @@ const getAllProduct = async (limit, offset) => {
   }
 };
 
+const getDetailProduct = async (productId) => {
+  return await mysqlDatabase.query(
+    `
+    SELECT
+      p.id,
+      p.title,
+      p.price,
+      p.content,
+      cg.name as category,
+      u.nickname,
+      r.name AS region,
+      c.name AS city,
+      a.name AS address,
+      JSON_ARRAYAGG(
+        pi.image_url
+      ) as product_image
+    FROM
+      products p
+    INNER JOIN sellers s ON s.id = p.seller_id
+    INNER JOIN users u ON s.user_id = u.id
+    INNER JOIN regions r ON u.region_id = r.id
+    INNER JOIN cities c ON u.city_id = c.id
+    INNER JOIN address a ON u.address_id = a.id
+    INNER JOIN categories cg ON p.category_id = cg.id
+    LEFT JOIN product_images pi ON pi.product_id = p.id
+    WHERE p.id = ?
+    `,
+    [productId]
+  );
+};
+
 module.exports = {
   getAllProduct,
+  getDetailProduct,
 };
