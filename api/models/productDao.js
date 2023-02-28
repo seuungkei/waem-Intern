@@ -139,8 +139,58 @@ const registerProduct = async (title, price, content, categoryId, userId, images
   }
 };
 
+const userProductList = async (userId) => {
+  try {
+    return await mysqlDatabase.query(
+      `
+      SELECT
+        p.id,
+        p.title,
+        p.price,
+        ps.status,
+        p.thumbnail as product_image,
+        r.name AS region,
+        c.name AS city,
+        a.name AS address
+      FROM
+        products p
+        INNER JOIN sellers s ON s.id = p.seller_id
+        INNER JOIN users u ON s.user_id = u.id
+        INNER JOIN regions r ON p.region_id = r.id
+        INNER JOIN cities c ON p.city_id = c.id
+        INNER JOIN address a ON p.address_id = a.id
+        INNER JOIN product_status ps ON p.product_status_id = ps.id
+        WHERE u.id = ?
+      `,
+      [7]
+    );
+  } catch (err) {
+    console.error(err.stack);
+    detectError('DATABASE_ERROR', 400);
+  }
+};
+
+const deleteProduct = async (productId, userId) => {
+  try {
+    return await mysqlDatabase.query(
+      `
+      DELETE FROM
+        products p
+      WHERE
+        p.id IN ('?') AND p.seller_id = ?
+      `,
+      [productId, 1]
+    );
+  } catch (err) {
+    console.error(err.stack);
+    detectError('DATABASE_ERROR', 400);
+  }
+};
+
 module.exports = {
   getAllProduct,
   getDetailProduct,
   registerProduct,
+  userProductList,
+  deleteProduct,
 };

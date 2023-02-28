@@ -30,4 +30,21 @@ const upload = multer({
   }),
 }).array('images', 5);
 
-module.exports = upload;
+const deleteImageFromS3 = (key) => {
+  const params = {
+    Bucket: process.env.AWS_POSTS_BUCKET_NAME,
+    Key: key,
+  };
+  s3.deleteObject(params, (err, data) => {
+    if (err) {
+      console.error(err);
+    } else {
+      console.log(`Image ${key} deleted from S3.`);
+    }
+  });
+};
+
+module.exports = {
+  upload,
+  deleteImageFromS3,
+};

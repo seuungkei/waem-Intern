@@ -14,8 +14,20 @@ const registerProduct = async (title, price, content, categoryId, userId, images
   return await productDao.registerProduct(title, price, content, categoryId, userId, images, regionId, cityId, addressId);
 };
 
+const userProductList = async (userId) => {
+  const result = await productDao.userProductList(userId);
+  return result;
+};
+
+const deleteProduct = async (productId, userId) => {
+  const result = await productDao.deleteProduct(productId, userId);
+  return result;
+};
+
 module.exports = {
   getAllProduct,
   getDetailProduct,
   registerProduct,
+  userProductList,
+  deleteProduct,
 };
